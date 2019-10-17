@@ -1,0 +1,23 @@
+#!/bin/bash
+[ -r ~/.config/bnotifyd.conf ] && . ~/.config/bnotifyd.conf || exit 1
+
+for i in "${!class[@]}"; do
+	max[$i]=$(cat "/sys/class/${class[$i]}/max_brightness")
+	prev[$i]=$(cat "/sys/class/${class[$i]}/brightness")
+done
+
+check () {
+	cur=$(cat "/sys/class/${class[$i]}/brightness")
+	if [ "$cur" == "${prev[$1]}" ]; then
+		return 1
+	fi
+	prev[$i]=$cur
+	perc=$(printf "%.0f\n" $(bc<<<"scale=2; $cur/${max[$1]}*100"))
+	notify-send.sh -R /tmp/${type[$i]}.notify -t 50 -h int:value:$perc -i ${type[$i]}-brightness-symbolic Brightness
+}
+
+acpi_listen | while read; do
+	for i in "${!class[@]}"; do
+		check $i && break
+	done
+done
