@@ -20,6 +20,7 @@ acpi_listen | while IFS= read -r l; do
 	if [ "${l::1}" != " " ]; then
 		continue
 	fi
+	sleep $delay
 	for i in "${!class[@]}"; do
 		check $i && break
 	done
