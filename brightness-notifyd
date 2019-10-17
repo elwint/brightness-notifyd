@@ -16,7 +16,10 @@ check () {
 	notify-send.sh -R /tmp/${type[$i]}.notify -t 50 -h int:value:$perc -i ${type[$i]}-brightness-symbolic Brightness
 }
 
-acpi_listen | while read; do
+acpi_listen | while IFS= read -r l; do
+	if [ "${l::1}" != " " ]; then
+		continue
+	fi
 	for i in "${!class[@]}"; do
 		check $i && break
 	done
