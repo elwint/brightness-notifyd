@@ -1,6 +1,8 @@
 #!/bin/bash
 [ -r ~/.config/bnotifyd.conf ] && . ~/.config/bnotifyd.conf || exit 1
 
+trap "trap - SIGTERM && kill -- -$$" SIGINT SIGTERM EXIT
+
 for i in "${!class[@]}"; do
 	max[$i]=$(cat "/sys/class/${class[$i]}/max_brightness")
 	prev[$i]=$(cat "/sys/class/${class[$i]}/brightness")
@@ -16,11 +18,16 @@ check () {
 	notify-send.sh -R /tmp/${type[$i]}.notify -t 50 -h int:value:$perc -i ${type[$i]}-brightness-symbolic Brightness
 }
 
+# Detect if brightness value is updated by acpid itself
+for i in "${!class[@]}"; do (
+	while inotifywait -qq -e close_write "/sys/class/${class[$i]}/brightness"; do
+		check $i
+	done
+	) &
+done
+
+# Check on acpi events if brightness change cannot be detected by inotify
 acpi_listen | while IFS= read -r l; do
-	if [ "${l::1}" != " " ]; then
-		continue
-	fi
-	sleep $delay
 	for i in "${!class[@]}"; do
 		check $i && break
 	done
