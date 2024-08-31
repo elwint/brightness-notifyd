@@ -14,11 +14,11 @@ check () {
 		return 1
 	fi
 	prev[$i]=$cur
-	perc=$(printf "%.0f\n" $(bc<<<"scale=2; $cur/${max[$1]}*100"))
+	perc=$((100 * cur / max[$1]))
 	notify-send.sh -R /tmp/${type[$i]}.notify -t 50 -h int:value:$perc -i ${type[$i]}-brightness-symbolic Brightness
 }
 
-# Detect if brightness value is updated by acpid itself
+# Detect if brightness value is updated by acpid itself or another service
 for i in "${!class[@]}"; do (
 	while inotifywait -qq -e close_write "/sys/class/${class[$i]}/brightness"; do
 		check $i
@@ -26,8 +26,11 @@ for i in "${!class[@]}"; do (
 	) &
 done
 
-# Check on acpi events if brightness change cannot be detected by inotify
+# Check on unknown acpi events (cannot be detected by inotify)
 acpi_listen | while IFS= read -r l; do
+	if [ "${l::1}" != " " ]; then
+		continue
+	fi
 	for i in "${!class[@]}"; do
 		check $i && break
 	done
